@@ -29,15 +29,23 @@ jobs:
 
       - name: Get payloads
         run: |
-          wget https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/refs/heads/master/SQL%20Injection/Intruder/SQL-Injection
-      
+          wget -O SQL-Injection https://raw.githubusercontent.com/swisskyrepo/PayloadsAllTheThings/refs/heads/master/SQL%20Injection/Intruder/SQL-Injection
+
       - name: Install fuzzing
         run: |
           go install github.com/ffuf/ffuf/v2@latest
 
       - name: Run fuzzing
         run: |
-          $HOME/go/bin/ffuf || true
+          $HOME/go/bin/ffuf \
+            -u http://localhost:3000/rest/user/login \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"FUZZ","password":"anything"}' \
+            -w SQL-Injection \
+            -mc 200 \
+            -o ffuf-sqli-results.json -of json \
+            | tee ffuf-sqli-results.log
 
       - name: Get Logs from Service
         run: |
@@ -49,3 +57,5 @@ jobs:
           name: security-reports-bundle
           path: |
             juice-logs.log
+            ffuf-sqli-results.json
+            ffuf-sqli-results.log
